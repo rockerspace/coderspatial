@@ -1,0 +1,82 @@
+RCODE FOR TIMESERIES
+install.packages("forecast")
+library("forecast")
+library("tseries")
+View(gas)
+head(gas)
+tail(gas)
+plot(gas)
+#####Converting into time series object########
+gas_ts <- ts(gas, frequency = 12, start = c(1956,1), end = c(1994,12))
+plot(gas_ts)
+gas_ts
+View(gas_ts)
+class(gas_ts)
+start(gas_ts)
+end(gas_ts)
+frequency(gas_ts)
+summary(gas_ts)
+cycle(gas_ts)
+plot.ts(gas_ts, main = "Monthly gas production in Australia", xlab = "Year", ylab = "ML")
+seasonplot(gas_ts, year.labels = TRUE, year.labels.left = TRUE, col=1:40,pch=19,main =
+             "Monthly Gas Production in Australia")
+monthplot(gas_ts, main = "Monthly Gas Production in Australia-monthplot", xlab ="Month",
+          ylab = "ML")
+boxplot(gas_ts ~ cycle(gas_ts), xlab = "Month", ylab = "ML", main = "Monthly Gas
+Production in Australia-Boxplot")
+plot.ts(gas_ts/monthdays(gas_ts), main = "Monthly gas production in Australia", xlab =
+          "Year", ylab = "ML")
+decompgas = decompose(gas_ts, type = "additive")
+plot(decompgas)
+decompgas
+decompgas = decompose(gas_ts, type = "multiplicative")
+plot(decompgas)
+decompgas
+deseasonal_gas = seasadj(decompgas)
+plot(deseasonal_gas)
+adf.test(gas_ts, alternative = "stationary")
+acf(gas_ts)
+acf(gas_ts, lag.max = 24)
+pacf(gas_ts, lag.max = 24)
+####Differencing the timeseries data###############################
+count_d1 = diff(deseasonal_gas, differences = 1)
+plot(count_d1)
+adf.test(count_d1, alternative = "stationary")
+Acf(count_d1, main='ACF for Differenced Series')
+Pacf(count_d1, main='PACF for Differenced Series')
+2
+######splitting data#####
+gasTStrain = window(deseasonal_gas, start=1956, end=c(1980,12))
+gasTStest= window(deseasonal_gas, start=1981, end=c(1994,12))
+#####Arima model###########
+gasARIMA = arima(gasTStrain, order=c(0,1,0))
+gasARIMA
+tsdisplay(residuals(gasARIMA), lag.max=15, main='Model Residuals')
+##########Autoarima model#############
+autoarima1<-auto.arima(gasTStrain, seasonal=FALSE)
+autoarima1
+autoarima2<-auto.arima(gasTStrain, stationary=TRUE)
+autoarima2
+tsdisplay(residuals(autoarima1), lag.max=45, main='Auto ARIMA Model Residuals')
+tsdisplay(residuals(autoarima2), lag.max=45, main='Auto ARIMA Model Residuals')
+#Ljung box test
+####H0: Residuals are independent####
+####Ha: Residuals are not independent######
+library(stats)
+Box.test(gasARIMA$residuals)
+Box.test(autoarima1$residuals)
+Box.test(autoarima2$residuals)
+###########Forecasting with ARIMA MODEL###############################
+fcast <- forecast(gasARIMA, h=12)
+plot(fcast)
+fcast1 <- forecast(autoarima1, h=12)
+plot(fcast1)
+fcast2<- forecast(autoarima2, h=12)
+plot(fcast2)
+#########Accuracy of the Forecast################################
+f5=forecast(gasARIMA)
+accuracy(f5, gasTStest)
+f6=forecast(autoarima1)
+accuracy(f6, gasTStest)
+f7=forecast(autoarima2)
+accuracy(f7, gasTStest)
